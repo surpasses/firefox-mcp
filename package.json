@@ -1,0 +1,22 @@
+{
+  "name": "firefox-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that drives a running Firefox over WebDriver BiDi (Claude in Chrome, but for Firefox)",
+  "type": "module",
+  "repository": "github:surpasses/firefox-mcp",
+  "license": "MIT",
+  "bin": {
+    "firefox-mcp": "server.mjs"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node test/smoke.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^3.25.76"
+  }
+}

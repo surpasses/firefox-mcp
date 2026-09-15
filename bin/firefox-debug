@@ -1,0 +1,38 @@
+#!/bin/sh
+# Launch the user's normal Firefox (default profile, all tabs and logins) with the
+# WebDriver BiDi remote agent enabled so firefox-mcp can attach to it.
+# Firefox only reads this flag at startup, so a running Firefox has to be quit first.
+set -eu
+PORT="${FIREFOX_MCP_PORT:-9222}"
+APP="/Applications/Firefox.app"
+
+# The remote agent answers HTTP on its port (a 404 is fine); the BiDi socket is at /session.
+agent_up() { [ "$(curl -s -o /dev/null -m 1 -w '%{http_code}' "http://127.0.0.1:${PORT}/" 2>/dev/null)" != "000" ]; }
+
+if agent_up; then
+  echo "Firefox remote agent already listening on ${PORT}."
+  exit 0
+fi
+
+if pgrep -fq "Firefox.app/Contents/MacOS/firefox"; then
+  if [ "${1:-}" = "--restart" ]; then
+    echo "Quitting Firefox (session restore will bring the tabs back)..."
+    osascript -e 'tell application "Firefox" to quit'
+    for _ in $(seq 1 40); do pgrep -fq "Firefox.app/Contents/MacOS/firefox" || break; sleep 0.25; done
+  else
+    echo "Firefox is running without the remote agent. Quit it (Cmd+Q) and re-run this,"
+    echo "or run: $0 --restart   (quits Firefox for you; tabs restore on relaunch)"
+    exit 1
+  fi
+fi
+
+open -a "$APP" --args --remote-debugging-port "$PORT"
+for _ in $(seq 1 60); do
+  if agent_up; then
+    echo "Firefox is up with BiDi on ws://127.0.0.1:${PORT}/session (look for the robot icon in the URL bar)."
+    exit 0
+  fi
+  sleep 0.5
+done
+echo "Firefox started but the remote agent did not come up on ${PORT}." >&2
+exit 1
